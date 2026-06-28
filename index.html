@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>耐火種別 × 防火区画 ＋ 防火設備 判定ツール</title>
+<style>
+  :root{
+    --navy:#1f3a5f;--navy2:#2c4f7c;--bg:#eef1f5;--card:#fff;--ink:#1f2933;--gray:#5b6470;--line:#d6dde6;
+    --red:#c0392b;--redbg:#fcebe9;--amber:#b9770b;--amberbg:#fdf3e3;--green:#0f8a5f;--greenbg:#e7f6ef;
+    --teal:#0f766e;--tealbg:#e4f2f0;--slate:#64748b;--slatebg:#eef2f6;--blue:#1f6feb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Yu Gothic","Meiryo",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6}
+  header{background:var(--navy);color:#fff;padding:22px 20px}
+  header .wrap{max-width:1000px;margin:0 auto}
+  header h1{margin:0 0 6px;font-size:21px}
+  header p{margin:0;font-size:13px;color:#cdd9e8}
+  .sashie{display:flex;justify-content:center;padding:16px 20px 0}
+  .sashie img{width:100%;max-width:300px;height:auto}
+  .container{max-width:1000px;margin:0 auto;padding:18px 20px 60px}
+  .toolbar{display:flex;justify-content:flex-start;margin:6px 0 2px}
+  .sum-row{display:flex;gap:12px;padding:10px 0;border-bottom:1px dashed #e3e8ee;font-size:13.5px}
+  .sum-row:last-child{border-bottom:none}
+  .sum-label{flex:0 0 116px;font-weight:700;color:var(--navy)}
+  .sum-val{flex:1}.sum-val .line{margin:2px 0}
+  .sum-chip{display:inline-block;font-size:13px;font-weight:700;padding:3px 12px;border-radius:20px}
+  .clearbtn{border:1px solid var(--line);background:#fff;color:var(--navy);font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:7px;cursor:pointer;font-family:inherit}
+  .clearbtn:hover{background:#eef2f8;border-color:var(--navy2)}
+  .part{margin-top:18px}
+  .part-title{font-size:16px;color:var(--navy);margin:0 0 6px;display:flex;align-items:center;gap:10px}
+  .step{background:var(--navy);color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px}
+  .part-sub{font-size:12px;color:var(--gray);margin:0 0 10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:10px 0;overflow:hidden}
+  .card-head{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none}
+  .card-head:hover{background:#f7f9fc}
+  .no-badge{flex:0 0 auto;background:var(--navy);color:#fff;font-size:12px;font-weight:700;padding:4px 9px;border-radius:6px;white-space:nowrap}
+  .card-title{flex:1}.card-title b{font-size:14.5px}.card-title span{display:block;font-size:12px;color:var(--gray)}
+  .verdict{flex:0 0 auto;font-size:12.5px;font-weight:700;padding:5px 11px;border-radius:20px;white-space:nowrap}
+  .v-gray{background:var(--slatebg);color:var(--slate)}.v-red{background:var(--redbg);color:var(--red)}
+  .v-amber{background:var(--amberbg);color:var(--amber)}.v-green{background:var(--greenbg);color:var(--green)}
+  .v-teal{background:var(--tealbg);color:var(--teal)}
+  .chev{flex:0 0 auto;color:var(--gray);transition:.2s;font-size:13px}
+  .card.open .chev{transform:rotate(90deg)}
+  .card-body{display:none;padding:4px 16px 18px;border-top:1px solid var(--line)}
+  .card.open .card-body{display:block}
+  .nocollapse .card-head{cursor:default}.nocollapse .chev{display:none}
+  .q{padding:11px 0;border-bottom:1px dashed #e3e8ee}.q:last-child{border-bottom:none}
+  .q .qt{font-size:13.5px;margin-bottom:7px}.q .qnote{font-size:11.5px;color:var(--gray);margin:-2px 0 7px;white-space:pre-line}
+  .opts{display:flex;flex-wrap:wrap;gap:8px}
+  .svgbox{margin:4px 0 10px;border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff;overflow-x:auto}
+  .svgbox img{display:block;width:100%;max-width:640px;height:auto;margin:0 auto}
+  .opt .sw{display:inline-block;width:12px;height:12px;border:1px solid #8893a0;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .chk{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:7px;padding:8px 14px;font-size:13.5px;cursor:pointer;background:#fff}
+  .chk:hover{border-color:var(--navy2)}
+  #kosou-sub{margin:12px 0 2px;font-size:13px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:8px 10px;background:#f7f9fc;border:1px solid var(--line);border-radius:7px}
+  #kosou-sub label{display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+  .opt{border:1px solid var(--line);border-radius:7px;padding:6px 16px;font-size:13px;cursor:pointer;background:#fff;transition:.12s}
+  .opt:hover{border-color:var(--navy2)}.opt.sel{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .result-box{margin-top:12px;padding:12px 14px;border-radius:8px;font-size:13px}
+  .rb-red{background:var(--redbg);border:1px solid #f1c9c3}.rb-amber{background:var(--amberbg);border:1px solid #f0dcb5}
+  .rb-green{background:var(--greenbg);border:1px solid #bfe6d4}.rb-teal{background:var(--tealbg);border:1px solid #bfe0db}
+  .rb-gray{background:var(--slatebg);border:1px solid #d8e0e8}
+  .result-box b{font-size:14px}
+  .law{font-size:11.5px;color:var(--gray);background:#f7f9fc;border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-top:10px}
+  .banner{border-radius:8px;padding:12px 14px;font-size:13px;margin:6px 0 10px}
+  .banner.wait{background:var(--slatebg);border:1px solid #d8e0e8;color:var(--ink)}
+  .banner.full{background:var(--redbg);border:1px solid #f1c9c3}
+  .banner.semi{background:var(--amberbg);border:1px solid #f0dcb5}
+  .banner.other{background:var(--greenbg);border:1px solid #bfe6d4}
+  .banner b{font-weight:700}
+  .notebox{background:#fff;border:1px solid var(--line);border-radius:8px;padding:13px 15px;font-size:12.8px;margin-top:14px}
+  .notebox b{color:var(--navy)}
+  footer{max-width:1000px;margin:0 auto;padding:0 20px 50px;font-size:11.5px;color:var(--gray)}
+  .disc{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-top:8px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>耐火種別 × 防火区画 ＋ 防火設備　判定ツール</h1>
+  <p>STEP1で建築物の耐火種別（耐火／準耐火／その他）、STEP2で防火区画（令112条：面積・高層・竪穴・異種用途）、まとめで区画の建具（防火設備）の性能まで判定します。</p>
+</div></header>
+
+<div class="sashie"><img src="sashie.svg" alt="耐火・特防・区画 イラスト"></div>
+
+<div class="container">
+  <div class="toolbar"><button class="clearbtn" id="clear-btn">すべてクリア</button></div>
+
+  <section class="part">
+    <h2 class="part-title"><span class="step">STEP 1</span>耐火種別の判定</h2>
+    <p class="part-sub">法27条・61条・26条を順番に判定し、もっとも厳しい種別が結果となります。</p>
+    <div id="taika-host"></div>
+  </section>
+
+  <section class="part">
+    <h2 class="part-title"><span class="step">STEP 2</span>防火区画の判定（令112条）</h2>
+    <div class="banner wait" id="kukaku-banner">STEP1 で耐火種別を判定すると、対象となる区画が分かります。</div>
+    <div id="kukaku-host"></div>
+    <div class="notebox" id="spandrel-note">
+      <b>スパンドレル（外壁の延焼防止措置）について</b><br>
+      防火区画が外壁に接する部分には、外壁面から50cm以上突き出した準耐火構造の袖壁・庇等、又は外壁を区画位置から上下・左右に90cm以上にわたり準耐火構造とする等の措置（スパンドレル：令112条16項・17項）が必要です。これは<b>面積区画・高層区画・竪穴区画では必要</b>ですが、<b>異種用途区画では不要</b>です。
+    </div>
+  </section>
+
+  <section class="part">
+    <h2 class="part-title"><span class="step">まとめ</span>判定結果</h2>
+    <div class="card open nocollapse">
+      <div class="card-body" style="display:block" id="summary-body"></div>
+    </div>
+  </section>
+
+  <section class="part">
+    <h2 class="part-title"><span class="step">OP</span>ダブり区画の建具</h2>
+    <p class="part-sub">開口部が接する防火区画にチェックを入れてください。区画を兼ねる場合は、各要求のうち最も厳しい性能が必要です。</p>
+    <div class="card open nocollapse">
+      <div class="card-body" style="display:block">
+        <div class="opts" id="step3-opts">
+          <label class="chk"><input type="checkbox" data-k="menseki"> 面積区画</label>
+          <label class="chk"><input type="checkbox" data-k="kosou"> 高層区画</label>
+          <label class="chk"><input type="checkbox" data-k="tateana"> 竪穴区画</label>
+          <label class="chk"><input type="checkbox" data-k="ishu"> 異種用途区画</label>
+        </div>
+        <div id="kosou-sub">
+          <span>高層区画の区画面積：</span>
+          <label><input type="radio" name="kosou-area" value="100"> 100㎡区画（令112条7項）</label>
+          <label><input type="radio" name="kosou-area" value="200"> 200・500㎡区画（令112条8・9項）</label>
+        </div>
+        <div class="result-box rb-gray" id="step3-result">区画を選択してください。</div>
+        <div class="law">防火設備＜特定防火設備（特定防火設備が上位）。遮煙性能（令112条19項二号）は竪穴区画・異種用途区画で必要。複数区画を兼ねる開口部は、防火設備種別・遮煙の各々で厳しい方を満たす必要があります。</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer><div class="disc">
+  <b>ご利用上の注意</b><br>
+  本ツールは条文を整理した参考判定です。別表第1の用途区分・面積要件、令和元年/4年改正の性能規定（火災時倒壊防止構造等）、特定行政庁の運用により結論が異なる場合があります。最終判断は所管機関へご確認ください。<br>
+  出典：建築基準法21・26・27・61条、同施行令112条・136条の2（e-Gov 法令検索）。
+</div></footer>
+
+<script>
+/* ===== result constructors ===== */
+const R=(status,label,msg)=>({status,label,msg});
+const inc=()=>R('inc','判定待ち','各項目を選択すると判定が表示されます。');
+const STMAP={
+  inc:{cls:'rb-gray',badge:'未選択',bc:'v-gray'},
+  full:{cls:'rb-red',badge:'耐火建築物',bc:'v-red'},
+  semi:{cls:'rb-amber',badge:'準耐火建築物',bc:'v-amber'},
+  other:{cls:'rb-green',badge:'その他',bc:'v-green'},
+  need:{cls:'rb-teal',badge:'区画 必要',bc:'v-teal'},
+  none:{cls:'rb-gray',badge:'区画 不要',bc:'v-gray'},
+  exempt:{cls:'rb-gray',badge:'免除・緩和',bc:'v-gray'},
+  relax:{cls:'rb-teal',badge:'緩和可能',bc:'v-teal'},
+};
+
+/* 法27条をクリア（別表第1に非該当、又は表で白＝規制対象外）して21条以降へ進む条件 */
+const pass27=s=>s.q1==='n'||(s.q1==='y'&&(s.q1c==='none'||s.q1c==='blue'));
+/* 法26条を確定し（耐火に当たらない範囲で）法21条へ進む条件 */
+const cont26=s=>s.q6==='n'||(s.q6==='y'&&(s.q6b==='wall'||s.q6b==='juntaika'));
+
+/* ===== sections ===== */
+const SECTIONS=[
+/* ---------------- STEP1 耐火種別 ---------------- */
+{id:'taika',host:'taika-host',nocollapse:true,badgeNo:'種別',title:'耐火建築物 / 準耐火建築物 / その他',summary:'用途・規模・地域から耐火種別を判定',
+ law:'法27条（特殊建築物）・法61条/令136条の2（防火・準防火地域）・法26条（防火壁）。法21条（大規模）は別途、令109条の5～7と関連告示参照。',
+ questions:[
+  {id:'q1',type:'yn',text:'【法27条】別表第1の特殊建築物（用途）に該当しますか？',note:'劇場・集会場(1)／病院・共同住宅等(2)／学校・体育館(3)／百貨店・物販店舗(4)／倉庫(5)／車庫・自動車修理工場(6) 等。'},
+  {id:'q1c',type:'choice',image:'bp01.svg',text:'下表（別表第1）で、対象建築物の用途×規模が該当するマスの色を選択してください。',
+   options:[{v:'red',label:'赤：耐火建築物等',color:'#FF9C9C'},{v:'orange',label:'オレンジ：耐火建築物',color:'#FFC000'},{v:'blue',label:'青：準耐火建築物',color:'#A6CAEC'},{v:'none',label:'白：規制対象外（次へ）'}],showIf:s=>s.q1==='y'},
+  {id:'q3',text:'【法61条・令136条の2】防火地域内で、階数3以上 又は 延べ面積100㎡超ですか？',type:'yn',showIf:s=>pass27(s)},
+  {id:'q4',text:'【法61条・令136条の2】準防火地域内で、地階を除く階数4以上 又は 延べ面積1500㎡超ですか？',type:'yn',showIf:s=>pass27(s)&&s.q3==='n'},
+  {id:'q5',text:'【法61条等】準耐火建築物等が必要な次のいずれかに該当しますか？',note:'・防火地域の小規模（地階除く2階以下かつ100㎡以下）\n・準防火地域で延べ面積500㎡超〜1500㎡以下\n・準防火地域で地階除く3階建（技術的基準）',type:'yn',showIf:s=>pass27(s)&&s.q3==='n'&&s.q4==='n'},
+  {id:'q6',text:'【法26条】延べ面積は1000㎡を超えますか？',note:'耐火・準耐火に該当しない建築物の防火壁・防火床（法26条）の要否を確認します。',type:'yn',showIf:s=>pass27(s)&&s.q3==='n'&&s.q4==='n'&&s.q5!==undefined},
+  {id:'q6b',text:'法26条への対応方法を選択してください。',note:'防火壁・防火床で区画する場合は、耐火・準耐火建築物にする必要はありません。ただし書により耐火・準耐火建築物とした場合は耐火・準耐火として扱います。',type:'choice',
+   options:[{v:'wall',label:'防火壁・防火床で区画'},{v:'taika',label:'ただし書により耐火建築物とする'},{v:'juntaika',label:'ただし書により準耐火建築物とする'}],
+   showIf:s=>pass27(s)&&s.q3==='n'&&s.q4==='n'&&s.q5!==undefined&&s.q6==='y'},
+ ],
+ compute(s){
+  if(s.q1===undefined)return inc();
+  if(s.q1==='y'){
+    if(s.q1c===undefined)return inc();
+    if(s.q1c==='red')return R('full','耐火建築物等','法27条（別表第1：赤）により耐火建築物等としなければなりません。');
+    if(s.q1c==='orange')return R('full','耐火建築物','法27条（別表第1：オレンジ）により耐火建築物とします。');
+    /* 青（準耐火）はここで確定せず、法61→法26→法21を継続して耐火に上書きされないか確認 */
+  }
+  /* 別表第1に非該当／白：法61→法26→法21の順に、耐火建築物等が出るまで継続 */
+  if(s.q3==='y')return R('full','耐火建築物','法61条（防火地域）により耐火建築物等（延焼防止建築物可）とします。');
+  if(s.q4==='y')return R('full','耐火建築物','法61条（準防火地域）により耐火建築物等（延焼防止建築物可）とします。');
+  if(s.q6b==='taika')return R('full','耐火建築物（法26条ただし書）','法26条ただし書により耐火建築物とします。');
+  if(s.q3===undefined)return inc();
+  if(s.q4===undefined)return inc();
+  if(s.q5===undefined)return inc();
+  if(s.q6===undefined)return inc();
+  if(s.q6==='y'&&s.q6b===undefined)return inc();
+  if(s.q1c==='blue'||s.q5==='y'||s.q6b==='juntaika')return R('semi','準耐火建築物','法27条（別表第1：青）・法61条の準耐火区分・法26条ただし書 等のうち該当するものにより準耐火建築物（準延焼防止建築物可）とします。');
+  if(s.q6==='y'&&s.q6b==='wall')return R('other','その他（防火壁・防火床で区画）','法26条により1000㎡以内ごとに防火壁・防火床で区画します。耐火・準耐火建築物とする必要はありません。');
+  return R('other','その他','耐火・準耐火の指定はありません（仕様規定の範囲で設計可）。');
+ }},
+
+/* ---------------- STEP2 面積区画 ---------------- */
+{id:'menseki',host:'kukaku-host',badgeNo:'① 面積',title:'面積区画',summary:'令112条1項・5項・4項',
+ law:'令112条1項（1500㎡）・5項（1000㎡）・4項（500㎡）。区画は床・壁＋特定防火設備。SP等設置部分は床面積1/2を除外。',
+ questions:[
+  {id:'a1',text:'主要構造部が耐火構造、又は<b>任意（法26条）の準耐火建築物</b>（イ-1・ロ-2）ですか？',type:'yn'},
+  {id:'a2',text:'法27条・61条・67条の規定により、準耐火建築物（イ-1・ロ-2＝1時間準耐火基準）としましたか？',type:'yn',showIf:s=>s.a1==='n'},
+  {id:'a3',text:'法27条・61条・67条の規定により、準耐火建築物（イ-2・ロ-1＝45分準耐火基準）としましたか？',type:'yn',showIf:s=>s.a1==='n'&&s.a2==='n'},
+ ],
+ compute(s){
+  if(s.a1===undefined)return inc();
+  if(s.a1==='y')return R('need','1500㎡以内ごとに区画（令112条1項）','延べ面積1500㎡を超える場合に適用。1時間準耐火構造の床・壁＋特定防火設備で区画。');
+  if(s.a2===undefined)return inc();
+  if(s.a2==='y')return R('need','1000㎡以内ごとに区画（令112条5項）','延べ面積1000㎡を超える場合に適用。1時間準耐火構造の床・壁＋特定防火設備で区画。');
+  if(s.a3===undefined)return inc();
+  return s.a3==='y'?R('need','500㎡以内ごとに区画（令112条4項）','延べ面積500㎡を超える場合に適用。準耐火構造の床・壁＋特定防火設備で区画。'):R('need','1500㎡以内ごとに区画（令112条1項）','上記の特定区分に当たらない耐火・準耐火建築物として、延べ面積1500㎡を超える場合に適用。1時間準耐火構造の床・壁＋特定防火設備で区画。');
+ }},
+
+/* ---------------- 高層区画 ---------------- */
+{id:'kosou',host:'kukaku-host',badgeNo:'② 高層',title:'高層区画',summary:'令112条7〜10項',
+ law:'令112条7項（100㎡）・8項（200㎡：準不燃）・9項（500㎡：不燃）。階段室・昇降路・廊下等の避難部分は除外（10項）。',
+ questions:[
+  {id:'h1',text:'11階以上の部分がありますか？',type:'yn'},
+  {id:'h2',text:'その部分の壁・天井の内装（下地・仕上げ）が不燃材料で、かつ開口部が特定防火設備ですか？',type:'yn',showIf:s=>s.h1==='y'},
+  {id:'h3',text:'壁・天井の内装が準不燃材料ですか？',type:'yn',showIf:s=>s.h1==='y'&&s.h2==='n'},
+ ],
+ compute(s){
+  if(s.h1===undefined)return inc();
+  if(s.h1==='n')return R('none','高層区画は不要','11階以上の部分がないため。');
+  if(s.h2===undefined)return inc();
+  if(s.h2==='y')return R('need','500㎡以内ごとに区画（令112条9項）','耐火構造の床・壁＋特定防火設備で区画。');
+  if(s.h3===undefined)return inc();
+  return s.h3==='y'?R('need','200㎡以内ごとに区画（令112条8項）','開口部は特定防火設備。'):R('need','100㎡以内ごとに区画（令112条7項）','耐火構造の床・壁＋防火設備で区画。');
+ }},
+
+/* ---------------- 竪穴区画 ---------------- */
+{id:'tateana',host:'kukaku-host',badgeNo:'③ 竪穴',title:'竪穴区画',summary:'令112条11〜15項',
+ law:'令112条11項。対象＝主要構造部を準耐火構造とした建築物 又は 令136条の2第一号ロ・第二号ロ該当。区画は準耐火構造（耐火建築物は耐火構造）の床・壁＋遮煙性能のある防火設備（戸）。',
+ questions:[
+  {id:'t0',text:'主要構造部を準耐火構造とした建築物、又は令136条の2第一号ロ・第二号ロに該当する建築物ですか？（ロ-2はいいえ）',type:'yn'},
+  {id:'t1',text:'地階、又は3階以上の階に居室がありますか？',type:'yn',showIf:s=>s.t0==='y'},
+  {id:'t2',text:'階段・吹抜け・昇降路・ダクトスペース等の竪穴部分がありますか？',type:'yn',showIf:s=>s.t0==='y'&&s.t1==='y'},
+  {id:'t3',text:'緩和に該当しますか？（避難階＋直上/直下のみに通ずる竪穴で内装不燃／階数3以下かつ200㎡以内の住戸 等）',type:'yn',showIf:s=>s.t0==='y'&&s.t1==='y'&&s.t2==='y'},
+ ],
+ compute(s){
+  if(s.t0===undefined)return inc();
+  if(s.t0==='n')return R('none','竪穴区画は不要','主要構造部が準耐火構造等（令136条の2一・二号ロ含む）の対象建築物に該当しないため。');
+  if(s.t1===undefined)return inc();
+  if(s.t1==='n')return R('none','竪穴区画は不要','地階・3階以上の階に居室がないため。');
+  if(s.t2===undefined)return inc();
+  if(s.t2==='n')return R('none','竪穴区画は不要','区画対象の竪穴部分がないため。ほんまか？階段ないわけないやろ！');
+  if(s.t3===undefined)return inc();
+  return s.t3==='y'?R('relax','該当「部分」は緩和可能（令112条11項各号）','<b>該当する部分以外は区画要です。</b>'):R('need','竪穴部分を区画（令112条11項）','準耐火構造（耐火建築物は耐火構造）の床・壁＋遮煙の防火設備で区画。');
+ }},
+
+/* ---------------- 異種用途区画 ---------------- */
+{id:'ishu',host:'kukaku-host',badgeNo:'④ 異種',title:'異種用途区画',summary:'令112条18項',
+ law:'令112条18項。区画は1時間準耐火基準の準耐火構造（耐火建築物は耐火構造）の床・壁、又は特定防火設備（遮煙）。スパンドレルは不要。',
+ questions:[
+  {id:'i1',text:'建築物の一部が、法27条1項・2項・3項 各号の用途・規模に該当しますか？',type:'yn'},
+  {id:'i2',text:'警報設備等による免除（令和2年国土交通省告示第250号）に該当しますか？',note:'一定のホテル・旅館・福祉施設・飲食店・物販店舗 等で自動火災報知設備を設けた場合 等（R2告示250号）。',type:'yn',showIf:s=>s.i1==='y'},
+ ],
+ compute(s){
+  if(s.i1===undefined)return inc();
+  if(s.i1==='n')return R('none','異種用途区画は不要','法27条の対象用途に該当しないため。');
+  if(s.i2===undefined)return inc();
+  return s.i2==='y'?R('exempt','区画の免除（令112条18項ただし書・R2告示250号）','警報設備等の設置により、令和2年告示第250号の免除規定に該当します。'):R('need','当該用途部分とその他を区画（令112条18項）','1時間準耐火基準の準耐火構造（耐火建築物は耐火構造）の床・壁、又は特定防火設備で区画。');
+ }},
+];
+
+/* ===== rendering ===== */
+const STATE={};
+SECTIONS.forEach(sec=>{
+  STATE[sec.id]={};
+  const host=document.getElementById(sec.host);
+  const card=document.createElement('div');
+  card.className='card'+(sec.nocollapse?' open nocollapse':'');
+  card.innerHTML=`<div class="card-head">
+      <span class="no-badge">${sec.badgeNo}</span>
+      <span class="card-title"><b>${sec.title}</b><span>${sec.summary}</span></span>
+      <span class="verdict v-gray" id="vb-${sec.id}">未選択</span>
+      <span class="chev">▶</span>
+    </div><div class="card-body" id="body-${sec.id}"></div>`;
+  if(!sec.nocollapse)card.querySelector('.card-head').addEventListener('click',()=>card.classList.toggle('open'));
+  host.appendChild(card);
+  update(sec.id);
+});
+
+function update(id){
+  const sec=SECTIONS.find(s=>s.id===id);
+  const s=STATE[id];
+  let html='';
+  sec.questions.forEach(q=>{
+    if(q.showIf&&!q.showIf(s))return;
+    const opts=q.type==='yn'?[{v:'y',label:'はい'},{v:'n',label:'いいえ'}]:q.options;
+    const img=q.image?`<div class="svgbox"><img src="${q.image}" alt="法27条 別表第1"></div>`:'';
+    html+=`<div class="q"><div class="qt">${q.text}</div>${q.note?`<div class="qnote">${q.note}</div>`:''}${img}
+      <div class="opts">${opts.map(o=>`<div class="opt ${s[q.id]===o.v?'sel':''}" data-id="${q.id}" data-v="${o.v}">${o.color?`<span class="sw" style="background:${o.color}"></span>`:''}${o.label}</div>`).join('')}</div></div>`;
+  });
+  const r=sec.compute(s);
+  const m=STMAP[r.status];
+  html+=`<div class="result-box ${m.cls}"><b>${r.label}</b><br>${r.msg}</div>`;
+  if(sec.law)html+=`<div class="law">根拠：${sec.law}</div>`;
+  const body=document.getElementById('body-'+id);
+  body.innerHTML=html;
+  const vb=document.getElementById('vb-'+id);
+  vb.className='verdict '+m.bc; vb.textContent=r.status==='inc'?'未選択':m.badge;
+  body.querySelectorAll('.opt').forEach(o=>o.addEventListener('click',()=>{
+    const qid=o.dataset.id; STATE[id][qid]=(STATE[id][qid]===o.dataset.v)?undefined:o.dataset.v; update(id);
+  }));
+  if(id==='taika')renderBanner();
+  renderSummary();
+}
+
+function renderBanner(){
+  const r=SECTIONS.find(s=>s.id==='taika').compute(STATE.taika||{});
+  const b=document.getElementById('kukaku-banner');
+  if(r.status==='inc'){b.className='banner wait';b.innerHTML='STEP1 で耐火種別を判定すると、対象となる区画が分かります。';return;}
+  if(r.status==='full'){b.className='banner full';b.innerHTML='<b>対象：耐火建築物</b> — 以下の防火区画（令112条）を判定してください。';return;}
+  if(r.status==='semi'){b.className='banner semi';b.innerHTML='<b>対象：準耐火建築物</b> — 以下の防火区画（令112条）を判定してください。';return;}
+  b.className='banner other';
+  b.innerHTML='<b>判定：その他の建築物</b> — 令112条の防火区画は原則として主要構造部が耐火・準耐火構造の建築物が対象のため、多くは対象外です（法26条で防火壁・防火床を選択した場合を含む）。';
+}
+
+/* ===== まとめ ===== */
+function devKosou(s){
+  if(s.h2==='y')return'特定防火設備（遮煙なし）／500㎡区画（9項）';
+  if(s.h2==='n'&&s.h3==='y')return'特定防火設備（遮煙なし）／200㎡区画（8項）';
+  return'防火設備（遮煙なし）／100㎡区画（7項）';
+}
+function tateguFor(id){
+  if(id==='menseki')return'特定防火設備（遮煙なし）';
+  if(id==='kosou')return devKosou(STATE.kosou);
+  if(id==='tateana')return'防火設備＋遮煙性能あり';
+  if(id==='ishu')return'特定防火設備＋遮煙性能あり';
+  return'';
+}
+function renderSummary(){
+  const body=document.getElementById('summary-body');if(!body)return;
+  const sec=id=>SECTIONS.find(x=>x.id===id);
+  const tk=sec('taika').compute(STATE.taika||{});const tkM=STMAP[tk.status];
+  let html='<div class="sum-row"><span class="sum-label">耐火種別</span><span class="sum-val"><span class="sum-chip '+tkM.bc+'">'+(tk.status==='inc'?'判定待ち':tk.label)+'</span></span></div>';
+  const ids=[['menseki','面積区画'],['kosou','高層区画'],['tateana','竪穴区画'],['ishu','異種用途区画']];
+  let kl=ids.map(([id,nm])=>{const r=sec(id).compute(STATE[id]||{});return'<div class="line">'+nm+'：'+(r.status==='inc'?'判定待ち':r.label)+'</div>';}).join('');
+  html+='<div class="sum-row"><span class="sum-label">必要な区画</span><span class="sum-val">'+kl+'</span></div>';
+  let tl=ids.map(([id,nm])=>{const r=sec(id).compute(STATE[id]||{});return r.status==='need'?'<div class="line">'+nm+' → '+tateguFor(id)+'</div>':'';}).filter(Boolean).join('');
+  if(!tl)tl='<div class="line" style="color:var(--gray)">区画が必要な箇所はありません（または判定待ち）。</div>';
+  html+='<div class="sum-row"><span class="sum-label">区画の建具性能</span><span class="sum-val">'+tl+'</span></div>';
+  body.innerHTML=html;
+}
+
+/* ===== STEP3 開口部性能 ===== */
+const DEVNAME={1:'防火設備',2:'特定防火設備'};
+const OPEN3={menseki:{name:'面積区画',dev:2,smoke:false},tateana:{name:'竪穴区画',dev:1,smoke:true},ishu:{name:'異種用途区画',dev:2,smoke:true}};
+function step3render(){
+  const checked=[...document.querySelectorAll('#step3-opts input:checked')].map(b=>b.dataset.k);
+  document.getElementById('kosou-sub').style.display=checked.includes('kosou')?'flex':'none';
+  const res=document.getElementById('step3-result');
+  if(checked.length===0){res.className='result-box rb-gray';res.innerHTML='区画を選択してください。';return;}
+  const items=[];let maxDev=0,smoke=false,devD=[],smkD=[],incomplete=false;
+  checked.forEach(k=>{
+    let dev,sm,nm,detail;
+    if(k==='kosou'){
+      nm='高層区画';const r=document.querySelector('input[name="kosou-area"]:checked');
+      if(!r){incomplete=true;items.push('高層区画：区画面積（100 / 200・500㎡）を選択してください');return;}
+      if(r.value==='100'){dev=1;sm=false;detail='防火設備（遮煙なし）／100㎡区画（令112条7項）';}
+      else{dev=2;sm=false;detail='特定防火設備（遮煙なし）／200・500㎡区画（令112条8・9項）';}
+    }else{const o=OPEN3[k];dev=o.dev;sm=o.smoke;nm=o.name;detail=DEVNAME[o.dev]+(o.smoke?'＋遮煙性能あり':'（遮煙なし）');}
+    items.push(nm+'：'+detail);
+    if(dev>maxDev){maxDev=dev;devD=[nm];}else if(dev===maxDev){devD.push(nm);}
+    if(sm){smoke=true;smkD.push(nm);}
+  });
+  let html='<b>選択区画の開口部性能</b><br>'+items.map(x=>'・'+x).join('<br>');
+  if(incomplete){res.className='result-box rb-gray';res.innerHTML=html;return;}
+  res.className='result-box rb-teal';
+  html+='<br><br><b>必要な開口部性能（最も厳しい要求）：'+DEVNAME[maxDev]+'＋'+(smoke?'遮煙性能あり':'遮煙性能なし')+'</b>';
+  if(checked.length>1){
+    let drv=DEVNAME[maxDev]+'：'+devD.join('・')+' による';
+    if(smoke)drv+=' ／ 遮煙：'+smkD.join('・')+' による';
+    html+='<br><span style="font-size:12px;color:#475569">'+drv+'</span>';
+  }
+  res.innerHTML=html;
+}
+document.querySelectorAll('#step3-opts input,#kosou-sub input').forEach(el=>el.addEventListener('change',step3render));
+step3render();
+
+/* clear */
+document.getElementById('clear-btn').addEventListener('click',()=>{
+  Object.keys(STATE).forEach(id=>STATE[id]={});
+  document.querySelectorAll('.card:not(.nocollapse)').forEach(c=>c.classList.remove('open'));
+  document.querySelectorAll('#step3-opts input,#kosou-sub input').forEach(el=>el.checked=false);
+  Object.keys(STATE).forEach(update);
+  step3render();
+});
+</script>
+</body>
+</html>
